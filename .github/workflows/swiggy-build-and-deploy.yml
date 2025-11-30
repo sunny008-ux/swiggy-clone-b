@@ -68,3 +68,11 @@ jobs:
       # -------------------------------------------------------
       - name: Push Docker Image
         run: docker push sunnytyagi13/swiggy-image:latest
+
+      # TRIVY IMAGE SCAN
+
+      - name: Trivy Image Scan
+        run: trivy image sunnytyagi13/swiggy-image:latest > trivyimage.txt
+
+      - name: Push Docker Image
+        run: docker push sunnytyagi13/swiggy-image:latest
