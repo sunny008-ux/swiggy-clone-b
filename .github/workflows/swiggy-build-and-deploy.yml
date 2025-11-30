@@ -22,4 +22,12 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
       - name: Trivy file scan
-        run: trivy fs . > trivyfs.txt 
+        run: trivy fs . > trivyfs.txt
+
+      - name: Docker build and push
+        uses: docker/login-action@v3
+        with:
+          images: sunnytyagi13/swiggy-image
+          registry: docker.io
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
