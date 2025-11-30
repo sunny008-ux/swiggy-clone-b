@@ -11,20 +11,45 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: checkout code
+
+      # -------------------------------------------------------
+      # FIX WORKSPACE PERMISSIONS (Mandatory for self-hosted EC2)
+      # -------------------------------------------------------
+      - name: Fix workspace permissions
+        run: sudo chown -R ubuntu:ubuntu "${{ github.workspace }}"
+
+      # -------------------------------------------------------
+      # CHECKOUT
+      # -------------------------------------------------------
+      - name: Checkout code
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
-      - name: Buid and Analysis with SonarQube
+      # -------------------------------------------------------
+      # SONARQUBE ANALYSIS
+      # -------------------------------------------------------
+      - name: Build and Analysis with SonarQube
         uses: sonarsource/sonarqube-scan-action@v2
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
-      - name: Trivy file scan
+      # -------------------------------------------------------
+      # CLEANUP SCANNERWORK (Avoid Permission Issues)
+      # -------------------------------------------------------
+      - name: Cleanup SonarQube scanner folder
+        run: rm -rf .scannerwork || true
+
+      # -------------------------------------------------------
+      # TRIVY FILE SYSTEM SCAN
+      # -------------------------------------------------------
+      - name: Trivy FS Scan
         run: trivy fs . > trivyfs.txt
 
+      # -------------------------------------------------------
+      # DOCKER LOGIN
+      # -------------------------------------------------------
       - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
@@ -32,8 +57,14 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      # -------------------------------------------------------
+      # DOCKER BUILD
+      # -------------------------------------------------------
       - name: Build Docker Image
         run: docker build -t sunnytyagi13/swiggy-image:latest .
 
+      # -------------------------------------------------------
+      # DOCKER PUSH
+      # -------------------------------------------------------
       - name: Push Docker Image
         run: docker push sunnytyagi13/swiggy-image:latest
