@@ -1,4 +1,4 @@
-name: Build
+name: Build & Deploy
 
 on:
   push:
@@ -7,49 +7,29 @@ on:
 
 jobs:
   build:
-    name: Build
     runs-on: self-hosted
-
     steps:
 
-      # -------------------------------------------------------
-      # FIX WORKSPACE PERMISSIONS (Mandatory for self-hosted EC2)
-      # -------------------------------------------------------
       - name: Fix workspace permissions
         run: sudo chown -R ubuntu:ubuntu "${{ github.workspace }}"
 
-      # -------------------------------------------------------
-      # CHECKOUT
-      # -------------------------------------------------------
       - name: Checkout code
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
-      # -------------------------------------------------------
-      # SONARQUBE ANALYSIS
-      # -------------------------------------------------------
       - name: Build and Analysis with SonarQube
         uses: sonarsource/sonarqube-scan-action@v2
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
-      # -------------------------------------------------------
-      # CLEANUP SCANNERWORK (Avoid Permission Issues)
-      # -------------------------------------------------------
       - name: Cleanup SonarQube scanner folder
         run: rm -rf .scannerwork || true
 
-      # -------------------------------------------------------
-      # TRIVY FILE SYSTEM SCAN
-      # -------------------------------------------------------
       - name: Trivy FS Scan
         run: trivy fs . > trivyfs.txt
 
-      # -------------------------------------------------------
-      # DOCKER LOGIN
-      # -------------------------------------------------------
       - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
@@ -57,22 +37,34 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # -------------------------------------------------------
-      # DOCKER BUILD
-      # -------------------------------------------------------
       - name: Build Docker Image
-        run: docker build -t sunnytyagi13/swiggy-image:latest .
-
-      # -------------------------------------------------------
-      # DOCKER PUSH
-      # -------------------------------------------------------
-      - name: Push Docker Image
-        run: docker push sunnytyagi13/swiggy-image:latest
-
-      # TRIVY IMAGE SCAN
+        run: docker build -t sunnytyagi13/swiggy-image:${{ github.sha }} .
 
       - name: Trivy Image Scan
-        run: trivy image sunnytyagi13/swiggy-image:latest > trivyimage.txt
+        run: trivy image sunnytyagi13/swiggy-image:${{ github.sha }} > trivyimage.txt
 
       - name: Push Docker Image
-        run: docker push sunnytyagi13/swiggy-image:latest
+        run: docker push sunnytyagi13/swiggy-image:${{ github.sha }}
+
+      # -------------------------------------------------------
+      # CD STEP: UPDATE ARGOCD GITOPS REPO
+      # -------------------------------------------------------
+      - name: Checkout ArgoCD Manifests Repo
+        uses: actions/checkout@v3
+        with:
+          repository: sunnytyagi13/swiggy-manifests        # <--- CHANGE THIS
+          token: ${{ secrets.GITHUB_TOKEN }}               # PAT if private
+          path: manifests
+
+      - name: Update Image Tag in K8s Manifests
+        run: |
+          sed -i "s|image: .*|image: sunnytyagi13/swiggy-image:${{ github.sha }}|g" manifests/deployment.yaml
+
+      - name: Commit & Push Changes
+        run: |
+          cd manifests
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add .
+          git commit -m "Deploy new image ${{ github.sha }}"
+          git push
