@@ -54,7 +54,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: sunny008-ux/Deployment-manifest
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_PAT }}
           path: manifests
           ref: main
 
