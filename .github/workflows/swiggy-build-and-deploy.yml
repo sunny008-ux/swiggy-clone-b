@@ -47,19 +47,20 @@ jobs:
         run: docker push sunnytyagi13/swiggy-image:${{ github.sha }}
 
       # -------------------------------------------------------
+           # -------------------------------------------------------
       # CD STEP: UPDATE ARGOCD GITOPS REPO
       # -------------------------------------------------------
       - name: Checkout ArgoCD Manifests Repo
         uses: actions/checkout@v3
         with:
-          repository: sunny008-ux/Deployment-manifest        # <--- CHANGE THIS
-          token: ${{ secrets.GITHUB_TOKEN }}               # PAT if private
+          repository: sunny008-ux/Deployment-manifest
+          token: ${{ secrets.GITHUB_TOKEN }}
           path: manifests
-          ref: main             # <--- CHANGE THIS TO YOUR REAL DEFAULT BRANCh
+          ref: main
 
       - name: Update Image Tag in K8s Manifests
         run: |
-          sed -i "s|image: .*|image: sunnytyagi13/swiggy-image:${{ github.sha }}|g" manifest/Deployment-service.yaml
+          sed -i "s|image: .*|image: sunnytyagi13/swiggy-image:${{ github.sha }}|g" manifests/Deployment-service.yaml
 
       - name: Commit & Push Changes
         run: |
@@ -67,5 +68,5 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add .
-          git commit -m "Deploy new image ${{ github.sha }}"
+          git commit -m "Deploy new image ${{ github.sha }}" || echo "No changes to commit"
           git push
