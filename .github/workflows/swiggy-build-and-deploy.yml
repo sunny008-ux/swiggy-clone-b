@@ -55,6 +55,7 @@ jobs:
           repository: sunnytyagi13/swiggy-manifests        # <--- CHANGE THIS
           token: ${{ secrets.GITHUB_TOKEN }}               # PAT if private
           path: manifests
+          ref: main             # <--- CHANGE THIS TO YOUR REAL DEFAULT BRANCh
 
       - name: Update Image Tag in K8s Manifests
         run: |
