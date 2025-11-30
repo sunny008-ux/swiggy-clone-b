@@ -52,7 +52,7 @@ jobs:
       - name: Checkout ArgoCD Manifests Repo
         uses: actions/checkout@v3
         with:
-          repository: sunnytyagi13/swiggy-manifests        # <--- CHANGE THIS
+          repository: sunnytyagi13/swiggy-manifest        # <--- CHANGE THIS
           token: ${{ secrets.GITHUB_TOKEN }}               # PAT if private
           path: manifests
           ref: main             # <--- CHANGE THIS TO YOUR REAL DEFAULT BRANCh
