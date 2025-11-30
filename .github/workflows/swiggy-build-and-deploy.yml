@@ -59,7 +59,7 @@ jobs:
 
       - name: Update Image Tag in K8s Manifests
         run: |
-          sed -i "s|image: .*|image: sunnytyagi13/swiggy-image:${{ github.sha }}|g" manifests/deployment.yaml
+          sed -i "s|image: .*|image: sunnytyagi13/swiggy-image:${{ github.sha }}|g" manifest/Deployment-service.yaml
 
       - name: Commit & Push Changes
         run: |
